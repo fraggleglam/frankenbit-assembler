@@ -1,4 +1,7 @@
 
+// Import types directly at the top of the file
+import { TimecodedWord, TimecodedSegment } from '@/types';
+
 // Convert timecode string (e.g., "00:01:23:15") to seconds
 export const timecodeToSeconds = (timecode: string): number => {
   // Handle different timecode formats
@@ -118,4 +121,5 @@ export const formatTimecode = (timecode: string): string => {
   return timecode.replace(/\.\d+$/, ''); // Remove milliseconds if present
 };
 
-export type { TimecodedWord, TimecodedSegment } from '../types';
+// Export types for use in other files
+export type { TimecodedWord, TimecodedSegment };
