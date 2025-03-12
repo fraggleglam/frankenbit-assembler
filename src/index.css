@@ -186,3 +186,52 @@
   background-size: 200% 100%;
   animation: shimmer 2s infinite linear;
 }
+
+/* Word display in assembled frankenbites */
+.word-item {
+  display: inline-block;
+  transition: all 0.2s ease-in-out;
+}
+
+.word-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation for highlighting words */
+@keyframes highlight-pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.highlight-pulse {
+  animation: highlight-pulse 2s ease-in-out infinite;
+}
+
+/* Strike-through for filler words that aren't found */
+.word-filler-missing {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* Stylized speech bubbles for quotes */
+.speech-bubble {
+  position: relative;
+  background: var(--accent);
+  border-radius: 0.8rem;
+}
+
+.speech-bubble:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 0.5rem solid transparent;
+  border-right-color: var(--accent);
+  border-left: 0;
+  margin-top: -0.5rem;
+  margin-left: -0.5rem;
+}

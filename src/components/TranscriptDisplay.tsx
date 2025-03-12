@@ -99,31 +99,53 @@ const TranscriptDisplay = ({ transcript, highlightedSegments = [] }: TranscriptD
         </div>
       ) : (
         <div className="space-y-4">
-          {segments.map((segment, index) => (
-            <div 
-              key={`${segment.startTimecode}-${index}`}
-              id={`segment-${segment.startTimecode.replace(/:/g, '-')}`}
-              className={`segment p-4 rounded-lg transition-all duration-300 ${
-                isSegmentHighlighted(segment) 
-                  ? 'bg-primary/10 border border-primary/30' 
-                  : 'hover:bg-accent/5 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center mb-2">
-                <span className="timecode text-xs px-2 py-1 rounded bg-muted font-medium">
-                  {formatTimecode(segment.startTimecode)}
-                </span>
-                <span className="mx-2 text-muted-foreground">→</span>
-                <span className="timecode text-xs px-2 py-1 rounded bg-muted font-medium">
-                  {formatTimecode(segment.endTimecode)}
-                </span>
+          {segments.map((segment, index) => {
+            const isHighlighted = isSegmentHighlighted(segment);
+            return (
+              <div 
+                key={`${segment.startTimecode}-${index}`}
+                id={`segment-${segment.startTimecode.replace(/:/g, '-')}`}
+                className={`segment p-4 rounded-lg transition-all duration-300 ${
+                  isHighlighted 
+                    ? 'bg-primary/10 border border-primary/30 shadow-md' 
+                    : 'hover:bg-accent/5 border border-transparent'
+                }`}
+              >
+                <div className="flex items-center mb-2">
+                  <span className="timecode text-xs px-2 py-1 rounded bg-muted font-medium">
+                    {formatTimecode(segment.startTimecode)}
+                  </span>
+                  <span className="mx-2 text-muted-foreground">→</span>
+                  <span className="timecode text-xs px-2 py-1 rounded bg-muted font-medium">
+                    {formatTimecode(segment.endTimecode)}
+                  </span>
+                </div>
+                
+                <p className="segment-text">
+                  {/* If highlighted, show word-by-word with each word potentially highlightable */}
+                  {isHighlighted ? (
+                    <span>
+                      {segment.words.map((word, wordIdx) => {
+                        // Simplified - in a real implementation, you'd determine which words match the search
+                        const isMatchedWord = false; // This would be determined by your search algorithm
+                        return (
+                          <span 
+                            key={wordIdx}
+                            className={`word-highlight ${isMatchedWord ? 'bg-primary/20 px-1 rounded' : ''}`}
+                          >
+                            {word.word}{' '}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  ) : (
+                    // Regular rendering for non-highlighted segments
+                    segment.text
+                  )}
+                </p>
               </div>
-              
-              <p className="segment-text">
-                {segment.text}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

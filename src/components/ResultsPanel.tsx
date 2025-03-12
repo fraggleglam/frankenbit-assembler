@@ -1,6 +1,7 @@
 
 import { SearchResult } from '@/types';
 import ResultItem from './ResultItem';
+import AssembledBite from './AssembledBite';
 import { getNotFoundMessage } from '@/utils/searchUtils';
 import { Sparkles, Search } from 'lucide-react';
 
@@ -72,7 +73,7 @@ const ResultsPanel = ({
   }
   
   return (
-    <div className="results-container p-3">
+    <div className="results-container p-3 overflow-y-auto thin-scrollbar">
       <div className="mb-4">
         <h3 className="text-lg font-medium mb-1">{results.length} Results</h3>
         <p className="text-sm text-muted-foreground">
@@ -82,6 +83,11 @@ const ResultsPanel = ({
           }
         </p>
       </div>
+      
+      {/* Display the assembled bite for the selected result */}
+      {selectedResult && (
+        <AssembledBite result={selectedResult} />
+      )}
       
       <div className="space-y-4">
         {results.map((result) => (

@@ -85,21 +85,48 @@ export const parseTranscriptWithTimecodes = (transcript: string): TimecodedSegme
     
     if (endIndex > startIndex) {
       const segmentText = transcript.substring(startIndex, endIndex).trim();
-      const words = segmentText.split(/\s+/);
+      // Split by words while preserving punctuation
+      const wordMatches = segmentText.match(/[\w']+|[.,!?;:]/g) || [];
+      
       const startTime = timecodeToSeconds(timecodes[i].timecode);
       const endTime = timecodeToSeconds(timecodes[i + 1].timecode);
       const duration = endTime - startTime;
       
-      const timecodedWords: TimecodedWord[] = words.map((word, idx) => {
+      const timecodedWords: TimecodedWord[] = [];
+      let currentPosition = 0;
+      let currentText = '';
+      
+      wordMatches.forEach((wordOrPunctuation, idx) => {
         // Estimate timecode for each word based on position in segment
-        const progress = idx / words.length;
+        // For more accurate results, this would use the word length and position
+        const progress = idx / wordMatches.length;
         const estimatedTime = startTime + (progress * duration);
         
-        return {
-          word: word,
-          timecode: secondsToTimecode(estimatedTime),
-          startTime: estimatedTime
-        };
+        // Handle punctuation by attaching it to the previous word if possible
+        if (/^[.,!?;:]$/.test(wordOrPunctuation)) {
+          if (timecodedWords.length > 0) {
+            // Attach punctuation to the last word
+            const lastWordIndex = timecodedWords.length - 1;
+            timecodedWords[lastWordIndex].word += wordOrPunctuation;
+          } else {
+            // If no previous word, create a new word entry just for punctuation
+            timecodedWords.push({
+              word: wordOrPunctuation,
+              timecode: secondsToTimecode(estimatedTime),
+              startTime: estimatedTime
+            });
+          }
+        } else {
+          // Regular word
+          timecodedWords.push({
+            word: wordOrPunctuation,
+            timecode: secondsToTimecode(estimatedTime),
+            startTime: estimatedTime
+          });
+        }
+        
+        currentText += wordOrPunctuation + ' ';
+        currentPosition += wordOrPunctuation.length + 1; // +1 for the space
       });
       
       segments.push({

@@ -45,6 +45,25 @@ const ResultItem = ({ result, onSelect, isSelected }: ResultItemProps) => {
     setExpanded(!expanded);
   };
 
+  // Highlight the main matched text
+  const highlightMatchedText = (text: string) => {
+    const words = text.split(' ');
+    
+    // Simplified approach - just highlight the text based on match quality
+    const highlightClass = {
+      perfect: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+      high: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300',
+      medium: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300',
+      low: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300',
+    }[result.matchQuality];
+
+    return (
+      <span className={`px-1 py-0.5 rounded ${highlightClass}`}>
+        {text}
+      </span>
+    );
+  };
+
   return (
     <div 
       className={`result-item rounded-xl transition-all duration-200 overflow-hidden ${
@@ -95,7 +114,7 @@ const ResultItem = ({ result, onSelect, isSelected }: ResultItemProps) => {
         </div>
         
         <p className="text-sm font-medium leading-relaxed">
-          {result.matchText}
+          {highlightMatchedText(result.matchText)}
         </p>
         
         <div className="flex flex-wrap gap-2 mt-3">
