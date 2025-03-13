@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { SearchResult } from '@/types';
-import { Clipboard, Check, ChevronDown, ChevronUp, Clock, FileCopy, BarChart3, Scissors } from 'lucide-react';
+import { Clipboard, Check, ChevronDown, ChevronUp, Clock, Copy, BarChart3, Scissors } from 'lucide-react';
 import { formatTimecode } from '@/utils/timeCodeUtils';
 import { toast } from '@/components/ui/use-toast';
 
@@ -176,7 +176,7 @@ const ResultItem = ({ result, onSelect, isSelected }: ResultItemProps) => {
                       });
                     }}
                   >
-                    <FileCopy size={12} />
+                    <Copy size={12} />
                     <span>Copy</span>
                   </button>
                 </div>
