@@ -28,6 +28,11 @@ export interface SearchResult {
   segments: TimecodedSegment[];
   matchScore: number; // 0-100 score
   matchQuality: 'perfect' | 'high' | 'medium' | 'low';
+  // Enhanced properties to provide more context
+  coherenceScore?: number; // How natural the assembled bite sounds
+  grammarScore?: number; // How grammatically correct the assembled bite is
+  contextPreservation?: number; // How well the original context is preserved
+  source?: 'exact' | 'frankenbite'; // Whether this is an exact match or assembled
 }
 
 export interface SearchState {
@@ -35,4 +40,31 @@ export interface SearchState {
   results: SearchResult[];
   isSearching: boolean;
   error: string | null;
+}
+
+// New interfaces for enhanced functionality
+
+export interface SearchFilter {
+  matchQuality?: 'perfect' | 'high' | 'medium' | 'low' | 'all';
+  minScore?: number;
+  maxSegments?: number;
+  speakerIds?: string[]; // For future speaker identification
+}
+
+export interface SavedFrankenbite {
+  id: string;
+  query: string;
+  result: SearchResult;
+  notes?: string;
+  createdAt: Date;
+  tags?: string[];
+}
+
+export interface ProjectCollection {
+  id: string;
+  name: string;
+  description?: string;
+  savedBites: SavedFrankenbite[];
+  createdAt: Date;
+  lastModified: Date;
 }
