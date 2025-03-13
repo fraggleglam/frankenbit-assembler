@@ -45,11 +45,29 @@ const normalizeText = (text: string): string => {
     .trim();
 };
 
-// Find exact and similar phrases in transcript segments
+// Calculate a grammatical coherence score (simplified version)
+const calculateCoherenceScore = (assembledText: string): number => {
+  // This is a simplified placeholder implementation
+  // In a real system, you would use NLP to analyze grammatical correctness
+  
+  // For now, just check if the assembled text has standard sentence structure
+  // Simple heuristics: does it start with capital, have proper spacing, end with punctuation
+  const hasProperSpacing = !assembledText.includes("  "); // No double spaces
+  const hasProperEnding = /[.!?]$/.test(assembledText);
+  
+  let score = 0.7; // Base score
+  if (hasProperSpacing) score += 0.15;
+  if (hasProperEnding) score += 0.15;
+  
+  return score;
+};
+
+// Enhanced search function to find exact and similar phrases in transcript segments
 export const searchPhrases = (
   segments: TimecodedSegment[],
   searchQuery: string,
-  similarityThreshold: number = 0.6
+  similarityThreshold: number = 0.6,
+  maxResults: number = 5
 ): SearchResult[] => {
   const results: SearchResult[] = [];
   const normalizedQuery = normalizeText(searchQuery);
@@ -73,11 +91,10 @@ export const searchPhrases = (
     }
   });
 
-  // If we found exact matches, return them
-  if (results.length > 0) return results;
+  // If we found exact matches, add them but continue searching for alternatives
   
   // Find partial matches with similarity scoring
-  const partialMatches: { segments: TimecodedSegment[], score: number }[] = [];
+  const partialMatches: { segments: TimecodedSegment[], score: number, coherence: number }[] = [];
   
   // Search for similar phrases
   segments.forEach(segment => {
@@ -85,48 +102,110 @@ export const searchPhrases = (
     const similarity = stringSimilarity(normalizedQuery, normalizedSegment);
     
     if (similarity >= similarityThreshold) {
+      const coherence = calculateCoherenceScore(segment.text);
       partialMatches.push({
         segments: [segment],
-        score: similarity * 100
+        score: similarity * 100,
+        coherence
       });
     }
   });
   
-  // Search for frankenbites (combinations of segments)
-  // This is a simplified version - a more sophisticated implementation would analyze
-  // combinations of words from different segments
+  // Advanced search for frankenbites (combinations of segments)
+  // This tries to construct frankenbites by combining segments that contain different parts of the query
   if (words.length > 1) {
-    // Simple approach: look for segments containing individual words
-    const wordMatches: { word: string, segments: TimecodedSegment[] }[] = words.map(word => {
-      return {
-        word,
-        segments: segments.filter(seg => normalizeText(seg.text).includes(word))
-      };
+    // Index all segments by which words they contain
+    const segmentsByWord = new Map<string, TimecodedSegment[]>();
+    
+    words.forEach(word => {
+      if (word.length < 3) return; // Skip very short words
+      
+      segmentsByWord.set(word, segments.filter(seg => 
+        normalizeText(seg.text).includes(word)
+      ));
     });
     
-    // If we found matches for each word, we can create a potential frankenbite
-    if (wordMatches.every(match => match.segments.length > 0)) {
-      // Use the first match for each word to create a frankenbite
-      const frankenSegments = wordMatches.map(match => match.segments[0]);
-      
-      // Calculate an approximate score based on coverage and sequence
-      const avgScore = 65; // Frankenbites are less ideal than natural matches
-      
-      partialMatches.push({
-        segments: frankenSegments,
-        score: avgScore
-      });
+    // Find combinations of up to 3 segments that together contain most/all query words
+    // This is a simplified approach - a real implementation would be more sophisticated
+    const candidateCombinations: TimecodedSegment[][] = [];
+    
+    // Try 2-segment combinations first (more natural sounding)
+    for (let i = 0; i < segments.length; i++) {
+      for (let j = i + 1; j < segments.length; j++) {
+        const seg1 = segments[i];
+        const seg2 = segments[j];
+        
+        const combined = normalizeText(seg1.text + " " + seg2.text);
+        const coverageScore = words.filter(word => 
+          combined.includes(word)
+        ).length / words.length;
+        
+        if (coverageScore > 0.7) { // If it covers at least 70% of words
+          candidateCombinations.push([seg1, seg2]);
+        }
+      }
     }
+    
+    // Try 3-segment combinations if needed
+    if (candidateCombinations.length < 3 && words.length > 3) {
+      for (let i = 0; i < segments.length; i++) {
+        for (let j = i + 1; j < segments.length; j++) {
+          for (let k = j + 1; k < segments.length; k++) {
+            const seg1 = segments[i];
+            const seg2 = segments[j];
+            const seg3 = segments[k];
+            
+            const combined = normalizeText(seg1.text + " " + seg2.text + " " + seg3.text);
+            const coverageScore = words.filter(word => 
+              combined.includes(word)
+            ).length / words.length;
+            
+            if (coverageScore > 0.8) { // Higher threshold for 3 segments
+              candidateCombinations.push([seg1, seg2, seg3]);
+            }
+          }
+        }
+      }
+    }
+    
+    // Score and add the combinations
+    candidateCombinations.forEach(combination => {
+      const combinedText = combination.map(seg => seg.text).join(" ... ");
+      const normalizedCombined = normalizeText(combinedText);
+      
+      const coverageScore = words.filter(word => 
+        normalizedCombined.includes(word)
+      ).length / words.length;
+      
+      const similarity = stringSimilarity(normalizedQuery, normalizedCombined);
+      const coherence = calculateCoherenceScore(combinedText) * 0.8; // Frankenbites are less coherent
+      
+      // Combine the scores - frankenbites need good word coverage
+      const finalScore = (similarity * 0.5 + coverageScore * 0.5) * 100;
+      
+      if (finalScore >= similarityThreshold * 100) {
+        partialMatches.push({
+          segments: combination,
+          score: finalScore,
+          coherence
+        });
+      }
+    });
   }
   
   // Sort by score (highest first) and add to results
   partialMatches
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5) // Limit to 5 results
+    .sort((a, b) => {
+      // Primary sort by match score
+      if (b.score !== a.score) return b.score - a.score;
+      // Secondary sort by coherence for items with similar scores
+      return b.coherence - a.coherence;
+    })
+    .slice(0, maxResults) // Limit to top results
     .forEach(match => {
       const quality = 
         match.score >= 90 ? 'high' : 
-        match.score >= 70 ? 'medium' : 'low';
+        match.score >= 75 ? 'medium' : 'low';
       
       results.push({
         id: `result-${results.length}`,
@@ -137,7 +216,13 @@ export const searchPhrases = (
       });
     });
   
-  return results;
+  // Return top unique results, sorted by score
+  return results
+    .filter((result, index, self) => 
+      index === self.findIndex(r => r.matchText === result.matchText)
+    )
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, maxResults);
 };
 
 // Find all occurrences of a word with context

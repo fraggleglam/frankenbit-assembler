@@ -3,7 +3,7 @@ import { SearchResult } from '@/types';
 import ResultItem from './ResultItem';
 import AssembledBite from './AssembledBite';
 import { getNotFoundMessage } from '@/utils/searchUtils';
-import { Sparkles, Search } from 'lucide-react';
+import { Sparkles, Search, Zap, BarChart3 } from 'lucide-react';
 
 interface ResultsPanelProps {
   results: SearchResult[];
@@ -73,12 +73,21 @@ const ResultsPanel = ({
   }
   
   return (
-    <div className="results-container p-3 overflow-y-auto thin-scrollbar">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium mb-1">{results.length} Results</h3>
+    <div className="results-container flex flex-col h-full overflow-hidden">
+      {/* Header section with result stats */}
+      <div className="p-4 border-b border-border/40">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <BarChart3 size={18} className="text-primary" />
+            <span>{results.length} Results</span>
+          </h3>
+          <div className="text-sm px-2 py-1 rounded-md bg-secondary/50 font-medium">
+            Ranked by match quality
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground">
           {results.length > 0
-            ? "Click a result to highlight its source in the transcript"
+            ? "Click a result to see its detailed breakdown and source locations"
             : "No matches found. Try another phrase."
           }
         </p>
@@ -86,18 +95,23 @@ const ResultsPanel = ({
       
       {/* Display the assembled bite for the selected result */}
       {selectedResult && (
-        <AssembledBite result={selectedResult} />
+        <div className="border-b border-border/40">
+          <AssembledBite result={selectedResult} />
+        </div>
       )}
       
-      <div className="space-y-4">
-        {results.map((result) => (
-          <ResultItem 
-            key={result.id} 
-            result={result} 
-            onSelect={onSelectResult}
-            isSelected={selectedResult?.id === result.id}
-          />
-        ))}
+      {/* Results scrollable list */}
+      <div className="flex-1 overflow-y-auto thin-scrollbar p-3">
+        <div className="space-y-4">
+          {results.map((result) => (
+            <ResultItem 
+              key={result.id} 
+              result={result} 
+              onSelect={onSelectResult}
+              isSelected={selectedResult?.id === result.id}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

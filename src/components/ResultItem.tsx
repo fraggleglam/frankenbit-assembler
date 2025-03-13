@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { SearchResult } from '@/types';
-import { Clipboard, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clipboard, Check, ChevronDown, ChevronUp, Clock, FileCopy, BarChart3, Scissors } from 'lucide-react';
 import { formatTimecode } from '@/utils/timeCodeUtils';
 import { toast } from '@/components/ui/use-toast';
 
@@ -17,10 +17,10 @@ const ResultItem = ({ result, onSelect, isSelected }: ResultItemProps) => {
 
   // Colors based on match quality
   const matchColors = {
-    perfect: 'bg-match-perfect text-white',
-    high: 'bg-match-high text-white',
-    medium: 'bg-match-medium text-foreground',
-    low: 'bg-match-low text-foreground',
+    perfect: 'bg-green-500 text-white',
+    high: 'bg-emerald-500 text-white',
+    medium: 'bg-amber-500 text-foreground',
+    low: 'bg-orange-500 text-foreground',
   };
 
   const handleCopy = () => {
@@ -73,17 +73,20 @@ const ResultItem = ({ result, onSelect, isSelected }: ResultItemProps) => {
       }`}
     >
       <div 
-        className="p-4 cursor-pointer"
+        className="px-4 pt-4 pb-3 cursor-pointer"
         onClick={() => onSelect(result)}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            <div className={`px-2 py-1 rounded text-xs font-medium ${matchColors[result.matchQuality]}`}>
-              {result.matchScore}% match
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className={`px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 ${matchColors[result.matchQuality]}`}>
+              <BarChart3 size={14} />
+              <span>{result.matchScore}% match</span>
             </div>
             {result.segments.length > 1 && (
-              <span className="text-xs px-2 py-1 bg-secondary rounded">
-                Frankenbite
+              <span className="text-xs px-2 py-1 bg-secondary rounded-md flex items-center gap-1">
+                <Scissors size={12} />
+                <span>Frankenbite</span>
+                <span className="text-muted-foreground ml-0.5">({result.segments.length} segments)</span>
               </span>
             )}
           </div>
@@ -117,21 +120,31 @@ const ResultItem = ({ result, onSelect, isSelected }: ResultItemProps) => {
           {highlightMatchedText(result.matchText)}
         </p>
         
-        <div className="flex flex-wrap gap-2 mt-3">
-          {result.segments.map((segment, index) => (
-            <div 
-              key={`${segment.startTimecode}-${index}`}
-              className="flex items-center text-xs text-muted-foreground"
-            >
-              <span className="timecode bg-muted/50 px-1.5 py-0.5 rounded">
-                {formatTimecode(segment.startTimecode)}
-              </span>
-              {index < result.segments.length - 1 && (
-                <span className="mx-1">→</span>
-              )}
+        {/* Simple timeline visualization */}
+        {result.segments.length > 0 && (
+          <div className="mt-3 mb-1">
+            <div className="flex items-center h-6 relative bg-secondary/30 rounded-md overflow-hidden">
+              {result.segments.map((segment, index) => {
+                const width = `${100 / result.segments.length}%`;
+                const left = `${(index * 100) / result.segments.length}%`;
+                
+                return (
+                  <div 
+                    key={`timeline-mini-${index}`}
+                    className={`absolute h-full ${
+                      index % 2 === 0 ? 'bg-primary/20' : 'bg-primary/30'
+                    }`}
+                    style={{ width, left }}
+                  >
+                    <div className="px-1 py-0.5 text-xs font-mono whitespace-nowrap overflow-hidden">
+                      {formatTimecode(segment.startTimecode)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
       
       {expanded && (
@@ -139,17 +152,34 @@ const ResultItem = ({ result, onSelect, isSelected }: ResultItemProps) => {
           <h4 className="font-medium mb-2 text-xs text-muted-foreground">Source Segments:</h4>
           <div className="space-y-3">
             {result.segments.map((segment, index) => (
-              <div key={`detail-${segment.startTimecode}-${index}`} className="segment-detail">
-                <div className="flex items-center mb-1 text-xs">
-                  <span className="timecode font-mono bg-muted/70 px-1.5 py-0.5 rounded">
-                    {formatTimecode(segment.startTimecode)}
-                  </span>
-                  <span className="mx-1">→</span>
-                  <span className="timecode font-mono bg-muted/70 px-1.5 py-0.5 rounded">
-                    {formatTimecode(segment.endTimecode)}
-                  </span>
+              <div key={`detail-${segment.startTimecode}-${index}`} className="segment-detail p-3 bg-secondary/20 rounded-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded bg-background/50">Segment {index + 1}</span>
+                  <div className="flex items-center gap-1 text-xs">
+                    <Clock size={14} className="text-muted-foreground" />
+                    <span className="font-mono bg-background/70 px-1.5 py-0.5 rounded">
+                      {formatTimecode(segment.startTimecode)} → {formatTimecode(segment.endTimecode)}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs">{segment.text}</p>
+                <p className="text-xs mt-2">{segment.text}</p>
+                
+                <div className="flex justify-end mt-2">
+                  <button 
+                    className="flex items-center gap-1 text-xs py-1 px-2 rounded-md bg-background/50 hover:bg-background/80 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(`${formatTimecode(segment.startTimecode)} "${segment.text}"`);
+                      toast({
+                        title: "Copied segment",
+                        description: "Timecode and text copied to clipboard",
+                      });
+                    }}
+                  >
+                    <FileCopy size={12} />
+                    <span>Copy</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
